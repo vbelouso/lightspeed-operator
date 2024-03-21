@@ -39,7 +39,7 @@ func (r *OLSConfigReconciler) reconcileRedisServer(ctx context.Context, olsconfi
 		}
 	}
 
-	r.logger.Info("reconcileRedisServer completes")
+	r.logger.Info("reconcileRedisServer completed")
 
 	return nil
 }
@@ -47,7 +47,7 @@ func (r *OLSConfigReconciler) reconcileRedisServer(ctx context.Context, olsconfi
 func (r *OLSConfigReconciler) reconcileRedisDeployment(ctx context.Context, cr *olsv1alpha1.OLSConfig) error {
 	desiredDeployment, err := r.generateRedisDeployment(cr)
 	if err != nil {
-		return fmt.Errorf("failed to generate OLS redis deployment: %w", err)
+		return fmt.Errorf("failed to generate Redis deployment: %w", err)
 	}
 
 	existingDeployment := &appsv1.Deployment{}
@@ -59,30 +59,29 @@ func (r *OLSConfigReconciler) reconcileRedisDeployment(ctx context.Context, cr *
 		updateDeploymentTemplateAnnotations(desiredDeployment, map[string]string{
 			RedisConfigHashKey: r.stateCache[RedisConfigHashStateCacheKey],
 		})
-		r.logger.Info("creating a new OLS redis deployment", "deployment", desiredDeployment.Name)
+		r.logger.Info("creating a new Redis deployment", "deployment", desiredDeployment.Name)
 		err = r.Create(ctx, desiredDeployment)
 		if err != nil {
-			return fmt.Errorf("failed to create OLS redis deployment: %w", err)
+			return fmt.Errorf("failed to create Redis deployment: %w", err)
 		}
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("failed to get OLS redis deployment: %w", err)
+		return fmt.Errorf("failed to get Redis deployment: %w", err)
 	}
 
 	err = r.updateRedisDeployment(ctx, existingDeployment, desiredDeployment)
-
 	if err != nil {
-		return fmt.Errorf("failed to update OLS redis deployment: %w", err)
+		return fmt.Errorf("failed to update Redis deployment: %w", err)
 	}
 
-	r.logger.Info("OLS redis deployment reconciled", "deployment", desiredDeployment.Name)
+	r.logger.Info("Redis deployment reconciled", "deployment", desiredDeployment.Name)
 	return nil
 }
 
 func (r *OLSConfigReconciler) reconcileRedisService(ctx context.Context, cr *olsv1alpha1.OLSConfig) error {
 	service, err := r.generateRedisService(cr)
 	if err != nil {
-		return fmt.Errorf("failed to generate OLS redis service: %w", err)
+		return fmt.Errorf("failed to generate Redis service: %w", err)
 	}
 
 	foundService := &corev1.Service{}
@@ -90,50 +89,43 @@ func (r *OLSConfigReconciler) reconcileRedisService(ctx context.Context, cr *ols
 	if err != nil && errors.IsNotFound(err) {
 		err = r.Create(ctx, service)
 		if err != nil {
-			return fmt.Errorf("failed to create OLS redis service: %w", err)
+			return fmt.Errorf("failed to create Redis service: %w", err)
 		}
 	} else if err != nil {
-		return fmt.Errorf("failed to get OLS redis service: %w", err)
+		return fmt.Errorf("failed to get Redis service: %w", err)
 	}
-	r.logger.Info("OLS redis service reconciled", "service", service.Name)
+	r.logger.Info("Redis service reconciled", "service", service.Name)
 	return nil
 }
 
 func (r *OLSConfigReconciler) reconcileRedisSecret(ctx context.Context, cr *olsv1alpha1.OLSConfig) error {
 	secret, err := r.generateRedisSecret(cr)
 	if err != nil {
-		return fmt.Errorf("failed to generate OLS redis secret: %w", err)
+		return fmt.Errorf("failed to generate Redis secret: %w", err)
 	}
 	foundSecret := &corev1.Secret{}
 	err = r.Client.Get(ctx, client.ObjectKey{Name: cr.Spec.OLSConfig.ConversationCache.Redis.CredentialsSecret, Namespace: r.Options.Namespace}, foundSecret)
 	if err != nil && errors.IsNotFound(err) {
-		labelSelector := labels.Set{"app.kubernetes.io/name": "lightspeed-service-redis"}.AsSelector()
-		oldSecrets := &corev1.SecretList{}
-		err = r.Client.List(ctx, oldSecrets, &client.ListOptions{Namespace: r.Options.Namespace, LabelSelector: labelSelector})
+		err = r.deleteOldRedisSecrets(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list old OLS redis secrets: %w", err)
+			return err
 		}
-		for _, oldSecret := range oldSecrets.Items {
-			oldSecretCopy := oldSecret // Create a local copy of the loop variable to fix G601
-			if err := r.Client.Delete(ctx, &oldSecretCopy); err != nil {
-				return fmt.Errorf("failed to delete old OLS redis secret: %w", err)
-			}
-		}
+		r.logger.Info("creating a new Redis secret", "secret", secret.Name)
 		err = r.Create(ctx, secret)
 		if err != nil {
-			return fmt.Errorf("failed to create OLS redis secret: %w", err)
+			return fmt.Errorf("failed to create Redis secret: %w", err)
 		}
 		r.stateCache[RedisSecretHashStateCacheKey] = secret.Annotations[RedisSecretHashKey]
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("failed to get OLS redis secret: %w", err)
+		return fmt.Errorf("failed to get Redis secret: %w", err)
 	}
 	foundSecretHash, err := hashBytes(foundSecret.Data[RedisSecretKeyName])
 	if err != nil {
-		return fmt.Errorf("failed to generate hash for the existing OLS redis secret: %w", err)
+		return fmt.Errorf("failed to generate hash for the existing Redis secret: %w", err)
 	}
 	if foundSecretHash == r.stateCache[RedisSecretHashStateCacheKey] {
-		r.logger.Info("OLS redis secret reconciliation skipped", "secret", foundSecret.Name, "hash", foundSecret.Annotations[RedisSecretHashKey])
+		r.logger.Info("Redis secret reconciliation skipped", "secret", foundSecret.Name, "hash", foundSecret.Annotations[RedisSecretHashKey])
 		return nil
 	}
 	r.stateCache[RedisSecretHashStateCacheKey] = foundSecretHash
@@ -141,8 +133,30 @@ func (r *OLSConfigReconciler) reconcileRedisSecret(ctx context.Context, cr *olsv
 	secret.Data[RedisSecretKeyName] = foundSecret.Data[RedisSecretKeyName]
 	err = r.Update(ctx, secret)
 	if err != nil {
-		return fmt.Errorf("failed to update OLS redis secret: %w", err)
+		return fmt.Errorf("failed to update Redis secret: %w", err)
 	}
-	r.logger.Info("OLS redis secret reconciled", "secret", secret.Name, "hash", secret.Annotations[RedisSecretHashKey])
+	r.logger.Info("Redis secret reconciled", "secret", secret.Name, "hash", secret.Annotations[RedisSecretHashKey])
+	return nil
+}
+
+func (r *OLSConfigReconciler) deleteOldRedisSecrets(ctx context.Context) error {
+	labelSelector := labels.Set{"app.kubernetes.io/name": "lightspeed-service-redis"}.AsSelector()
+	matchingLabels := client.MatchingLabelsSelector{Selector: labelSelector}
+	oldSecrets := &corev1.SecretList{}
+	err := r.Client.List(ctx, oldSecrets, &client.ListOptions{Namespace: r.Options.Namespace, LabelSelector: labelSelector})
+	if err != nil {
+		return fmt.Errorf("failed to list old Redis secrets: %w", err)
+	}
+	r.logger.Info("deleting old Redis secrets", "count", len(oldSecrets.Items))
+
+	deleteOptions := &client.DeleteAllOfOptions{
+		ListOptions: client.ListOptions{
+			Namespace:     r.Options.Namespace,
+			LabelSelector: matchingLabels,
+		},
+	}
+	if err := r.Client.DeleteAllOf(ctx, &corev1.Secret{}, deleteOptions); err != nil {
+		return fmt.Errorf("failed to delete old Redis secrets: %w", err)
+	}
 	return nil
 }

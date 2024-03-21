@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("App redis server assets", func() {
-
 	var cr *olsv1alpha1.OLSConfig
 	var r *OLSConfigReconciler
 	var rOptions *OLSConfigReconcilerOptions
@@ -45,7 +44,8 @@ var _ = Describe("App redis server assets", func() {
 				corev1.ResourceMemory: resource.MustParse("1Gi"),
 			},
 		}))
-		Expect(dep.Spec.Template.Spec.Containers[0].Command).To(Equal([]string{"redis-server",
+		Expect(dep.Spec.Template.Spec.Containers[0].Command).To(Equal([]string{
+			"redis-server",
 			"--port", "0",
 			"--tls-port", "6379",
 			"--tls-cert-file", path.Join(OLSAppCertsMountRoot, "tls.crt"),
@@ -53,7 +53,8 @@ var _ = Describe("App redis server assets", func() {
 			"--tls-ca-cert-file", path.Join(OLSAppCertsMountRoot, RedisCAVolume, "service-ca.crt"),
 			"--tls-auth-clients", "optional",
 			"--protected-mode", "no",
-			"--requirepass", password},
+			"--requirepass", password,
+		},
 		))
 		Expect(dep.Spec.Selector.MatchLabels).To(Equal(generateRedisSelectorLabels()))
 		Expect(dep.Spec.RevisionHistoryLimit).To(Equal(&revisionHistoryLimit))
@@ -133,7 +134,7 @@ var _ = Describe("App redis server assets", func() {
 			}
 		})
 
-		It("should generate the OLS redis deployment", func() {
+		It("should generate the Redis deployment", func() {
 			cr.Spec.OLSConfig.ConversationCache.Redis.CredentialsSecret = "dummy-secret-1"
 			secret, _ := r.generateRedisSecret(cr)
 			secret.SetOwnerReferences([]metav1.OwnerReference{
@@ -154,7 +155,7 @@ var _ = Describe("App redis server assets", func() {
 			Expect(secretDeletionErr).NotTo(HaveOccurred())
 		})
 
-		It("should work when no update in the OLS redis deployment", func() {
+		It("should work when no update in the Redis deployment", func() {
 			cr.Spec.OLSConfig.ConversationCache.Redis.CredentialsSecret = "dummy-secret-2"
 			secret, _ := r.generateRedisSecret(cr)
 			secret.SetOwnerReferences([]metav1.OwnerReference{
@@ -188,7 +189,7 @@ var _ = Describe("App redis server assets", func() {
 			Expect(deploymentDeletionErr).NotTo(HaveOccurred())
 		})
 
-		It("should work when there is an update in the OLS redis deployment", func() {
+		It("should work when there is an update in the Redis deployment", func() {
 			cr.Spec.OLSConfig.ConversationCache.Redis.CredentialsSecret = "dummy-secret-3"
 			secret, _ := r.generateRedisSecret(cr)
 			secret.SetOwnerReferences([]metav1.OwnerReference{
@@ -225,11 +226,11 @@ var _ = Describe("App redis server assets", func() {
 			Expect(deploymentDeletionErr).NotTo(HaveOccurred())
 		})
 
-		It("should generate the OLS redis service", func() {
+		It("should generate the Redis service", func() {
 			validateRedisService(r.generateRedisService(cr))
 		})
 
-		It("should generate the OLS redis secret", func() {
+		It("should generate the Redis secret", func() {
 			secret, err := r.generateRedisSecret(cr)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(secret.Name).To(Equal("lightspeed-redis-secret"))
@@ -253,7 +254,7 @@ var _ = Describe("App redis server assets", func() {
 			}
 		})
 
-		It("should generate the OLS redis deployment", func() {
+		It("should generate the Redis deployment", func() {
 			cr.Spec.OLSConfig.ConversationCache.Redis.CredentialsSecret = "dummy-secret-4"
 			secret, _ := r.generateRedisSecret(cr)
 			secret.SetOwnerReferences([]metav1.OwnerReference{
@@ -274,11 +275,11 @@ var _ = Describe("App redis server assets", func() {
 			Expect(secretDeletionErr).NotTo(HaveOccurred())
 		})
 
-		It("should generate the OLS redis service", func() {
+		It("should generate the Redis service", func() {
 			validateRedisService(r.generateRedisService(cr))
 		})
 
-		It("should generate the OLS redis secret", func() {
+		It("should generate the Redis secret", func() {
 			cr.Spec.OLSConfig.ConversationCache.Redis.CredentialsSecret = RedisSecretName
 			secret, err := r.generateRedisSecret(cr)
 			Expect(err).NotTo(HaveOccurred())
@@ -286,7 +287,6 @@ var _ = Describe("App redis server assets", func() {
 			validateRedisSecret(secret)
 		})
 	})
-
 })
 
 func getOLSConfigWithCacheCR() *olsv1alpha1.OLSConfig {
@@ -318,5 +318,4 @@ func getNoCacheCR() *olsv1alpha1.OLSConfig {
 			Namespace: OLSNamespaceDefault,
 		},
 	}
-
 }

@@ -96,14 +96,14 @@ func (r *OLSConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 	r.logger.Info("reconciliation starts", "olsconfig generation", olsconfig.Generation)
+	err = r.reconcileRedisServer(ctx, olsconfig)
+	if err != nil {
+		r.logger.Error(err, "Failed to reconcile Redis")
+		return ctrl.Result{}, err
+	}
 	err = r.reconcileAppServer(ctx, olsconfig)
 	if err != nil {
 		r.logger.Error(err, "Failed to reconcile application server")
-		return ctrl.Result{}, err
-	}
-	err = r.reconcileRedisServer(ctx, olsconfig)
-	if err != nil {
-		r.logger.Error(err, "Failed to reconcile ols redis")
 		return ctrl.Result{}, err
 	}
 	err = r.reconcileConsoleUI(ctx, olsconfig)

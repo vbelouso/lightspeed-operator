@@ -159,12 +159,12 @@ func (r *OLSConfigReconciler) updateRedisDeployment(ctx context.Context, existin
 	}
 
 	if changed {
-		r.logger.Info("updating OLS redis deployment", "name", existingDeployment.Name)
+		r.logger.Info("updating Redis deployment", "name", existingDeployment.Name)
 		if err := r.Update(ctx, existingDeployment); err != nil {
 			return err
 		}
 	} else {
-		r.logger.Info("OLS redis deployment reconciliation skipped", "deployment", existingDeployment.Name, "olsconfig hash", existingDeployment.Annotations[RedisConfigHashKey])
+		r.logger.Info("Redis deployment reconciliation skipped", "deployment", existingDeployment.Name, "olsconfig hash", existingDeployment.Annotations[RedisConfigHashKey])
 	}
 
 	return nil
@@ -211,7 +211,7 @@ func (r *OLSConfigReconciler) generateRedisSecret(cr *olsv1alpha1.OLSConfig) (*c
 	encodedPassword := base64.StdEncoding.EncodeToString(randomPassword)
 	passwordHash, err := hashBytes([]byte(encodedPassword))
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate OLS redis password hash %w", err)
+		return nil, fmt.Errorf("failed to generate Redis password hash %w", err)
 	}
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

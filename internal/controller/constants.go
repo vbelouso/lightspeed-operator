@@ -8,9 +8,9 @@ const (
 	/*** application server configuration file ***/
 	// OLSConfigName is the name of the OLSConfig configmap
 	OLSConfigCmName = "olsconfig"
-	// RedisCAConfigMap is the name of the OLS redis server TLS ca certificate configmap
+	// RedisCAConfigMap is the name of the Redis server TLS ca certificate configmap
 	RedisCAConfigMap = "openshift-service-ca.crt"
-	// RedisCAVolume is the name of the OLS redis TLS ca certificate volume name
+	// RedisCAVolume is the name of the Redis TLS ca certificate volume name
 	RedisCAVolume = "cm-olsredisca"
 	// OLSNamespaceDefault is the default namespace for OLS
 	OLSNamespaceDefault = "openshift-lightspeed"
@@ -64,11 +64,11 @@ const (
 	OLSAppServerServiceName = "lightspeed-app-server"
 	// OLSCertsSecretName is the name of the TLS secret for OLS.
 	OLSCertsSecretName = "lightspeed-tls" // #nosec G101
-	// RedisServicePort is the port number of the OLS redis server service
+	// RedisServicePort is the port number of the Redis server service
 	RedisServicePort = 6379
-	// RedisMaxMemory is the max memory of the OLS redis cache
+	// RedisMaxMemory is the max memory of the Redis cache
 	RedisMaxMemory = "1024mb"
-	// RedisMaxMemoryPolicy is the max memory policy of the OLS redis cache
+	// RedisMaxMemoryPolicy is the max memory policy of the Redis cache
 	RedisMaxMemoryPolicy = "allkeys-lru"
 	// OLSDefaultCacheType is the default cache type for OLS
 	OLSDefaultCacheType = "redis"

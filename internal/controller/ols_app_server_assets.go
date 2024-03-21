@@ -164,7 +164,7 @@ func (r *OLSConfigReconciler) generateOLSConfigMap(cr *olsv1alpha1.OLSConfig) (*
 
 	redisConfigFileBytes, err := yaml.Marshal(conversationCache.Redis)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate OLS redis config bytes %w", err)
+		return nil, fmt.Errorf("failed to generate Redis config bytes %w", err)
 	}
 
 	configFileHash, err := hashBytes(configFileBytes)
@@ -174,7 +174,7 @@ func (r *OLSConfigReconciler) generateOLSConfigMap(cr *olsv1alpha1.OLSConfig) (*
 
 	redisConfigHash, err := hashBytes(redisConfigFileBytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate OLS redis config hash %w", err)
+		return nil, fmt.Errorf("failed to generate Redis config hash %w", err)
 	}
 
 	cm := corev1.ConfigMap{
